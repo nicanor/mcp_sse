@@ -130,67 +130,67 @@ defmodule MCPServer do
       require Logger
 
       # Built-in message routing
-      def handle_message(%{"method" => "notifications/initialized"} = message) do
+      def handle_message(_assigns, %{"method" => "notifications/initialized"} = message) do
         Logger.info("Received initialized notification")
         Logger.debug("Full message: #{inspect(message, pretty: true)}")
         {:ok, nil}
       end
 
-      def handle_message(%{"method" => method, "id" => id} = message) do
+      def handle_message(assigns, %{"method" => method, "id" => id} = message) do
         Logger.info("Routing MCP message - Method: #{method}, ID: #{id}")
         Logger.debug("Full message: #{inspect(message, pretty: true)}")
 
         case method do
           "ping" ->
             Logger.debug("Handling ping request")
-            handle_ping(id)
+            handle_ping(assigns, id)
 
           "initialize" ->
             Logger.info(
               "Handling initialize request with params: #{inspect(message["params"], pretty: true)}"
             )
 
-            handle_initialize(id, message["params"])
+            handle_initialize(assigns, id, message["params"])
 
           "completion/complete" ->
             Logger.debug(
               "Handling complete request with params: #{inspect(message["params"], pretty: true)}"
             )
 
-            handle_complete(id, message["params"])
+            handle_complete(assigns, id, message["params"])
 
           "prompts/list" ->
             Logger.debug("Handling prompts list request")
-            handle_list_prompts(id, message["params"])
+            handle_list_prompts(assigns, id, message["params"])
 
           "prompts/get" ->
             Logger.debug(
               "Handling prompt get request with params: #{inspect(message["params"], pretty: true)}"
             )
 
-            handle_get_prompt(id, message["params"])
+            handle_get_prompt(assigns, id, message["params"])
 
           "resources/list" ->
             Logger.debug("Handling resources list request")
-            handle_list_resources(id, message["params"])
+            handle_list_resources(assigns, id, message["params"])
 
           "resources/read" ->
             Logger.debug(
               "Handling resource read request with params: #{inspect(message["params"], pretty: true)}"
             )
 
-            handle_read_resource(id, message["params"])
+            handle_read_resource(assigns, id, message["params"])
 
           "tools/list" ->
             Logger.debug("Handling tools list request")
-            handle_list_tools(id, message["params"])
+            handle_list_tools(assigns, id, message["params"])
 
           "tools/call" ->
             Logger.debug(
               "Handling tool call request with params: #{inspect(message["params"], pretty: true)}"
             )
 
-            handle_call_tool(id, message["params"])
+            handle_call_tool(assigns, id, message["params"])
 
           other ->
             Logger.warning("Received unsupported method: #{other}")
@@ -210,7 +210,7 @@ defmodule MCPServer do
         end
       end
 
-      def handle_message(unknown_message) do
+      def handle_message(_assigns, unknown_message) do
         Logger.error("Received invalid message format: #{inspect(unknown_message, pretty: true)}")
 
         {:error,
@@ -228,22 +228,22 @@ defmodule MCPServer do
       end
 
       # Default implementations for optional callbacks
-      def handle_complete(_request_id, _params), do: {:error, "Not implemented"}
-      def handle_list_prompts(_request_id, _params), do: {:error, "Not implemented"}
-      def handle_get_prompt(_request_id, _params), do: {:error, "Not implemented"}
-      def handle_list_resources(_request_id, _params), do: {:error, "Not implemented"}
-      def handle_read_resource(_request_id, _params), do: {:error, "Not implemented"}
-      def handle_list_tools(_request_id, _params), do: {:error, "Not implemented"}
-      def handle_call_tool(_request_id, _params), do: {:error, "Not implemented"}
+      def handle_complete(_assigns, _request_id, _params), do: {:error, "Not implemented"}
+      def handle_list_prompts(_assigns, _request_id, _params), do: {:error, "Not implemented"}
+      def handle_get_prompt(_assigns, _request_id, _params), do: {:error, "Not implemented"}
+      def handle_list_resources(_assigns, _request_id, _params), do: {:error, "Not implemented"}
+      def handle_read_resource(_assigns, _request_id, _params), do: {:error, "Not implemented"}
+      def handle_list_tools(_assigns, _request_id, _params), do: {:error, "Not implemented"}
+      def handle_call_tool(_assigns, _request_id, _params), do: {:error, "Not implemented"}
 
       # Allow overriding any of the defaults
-      defoverridable handle_complete: 2,
-                     handle_list_prompts: 2,
-                     handle_get_prompt: 2,
-                     handle_list_resources: 2,
-                     handle_read_resource: 2,
-                     handle_list_tools: 2,
-                     handle_call_tool: 2
+      defoverridable handle_complete: 3,
+                     handle_list_prompts: 3,
+                     handle_get_prompt: 3,
+                     handle_list_resources: 3,
+                     handle_read_resource: 3,
+                     handle_list_tools: 3,
+                     handle_call_tool: 3
 
       # Helper functions
       def validate_protocol_version(client_version) do
@@ -263,40 +263,40 @@ defmodule MCPServer do
   end
 
   # Required Callbacks
-  @callback handle_ping(request_id :: String.t() | integer()) ::
+  @callback handle_ping(assigns :: Map.t(), request_id :: String.t() | integer()) ::
               {:ok, map()} | {:error, String.t()}
-  @callback handle_initialize(request_id :: String.t() | integer(), params :: map()) ::
+  @callback handle_initialize(assigns :: Map.t(), request_id :: String.t() | integer(), params :: map()) ::
               {:ok, map()} | {:error, String.t()}
 
   # Optional Callbacks
-  @callback handle_complete(request_id :: String.t() | integer(), params :: map()) ::
+  @callback handle_complete(assigns :: Map.t(), request_id :: String.t() | integer(), params :: map()) ::
               {:ok, map()} | {:error, String.t()}
 
-  @callback handle_list_prompts(request_id :: String.t() | integer(), params :: map()) ::
+  @callback handle_list_prompts(assigns :: Map.t(), request_id :: String.t() | integer(), params :: map()) ::
               {:ok, map()} | {:error, String.t()}
 
-  @callback handle_get_prompt(request_id :: String.t() | integer(), params :: map()) ::
+  @callback handle_get_prompt(assigns :: Map.t(), request_id :: String.t() | integer(), params :: map()) ::
               {:ok, map()} | {:error, String.t()}
 
-  @callback handle_list_resources(request_id :: String.t() | integer(), params :: map()) ::
+  @callback handle_list_resources(assigns :: Map.t(), request_id :: String.t() | integer(), params :: map()) ::
               {:ok, map()} | {:error, String.t()}
 
-  @callback handle_read_resource(request_id :: String.t() | integer(), params :: map()) ::
+  @callback handle_read_resource(assigns :: Map.t(), request_id :: String.t() | integer(), params :: map()) ::
               {:ok, map()} | {:error, String.t()}
 
-  @callback handle_list_tools(request_id :: String.t() | integer(), params :: map()) ::
+  @callback handle_list_tools(assigns :: Map.t(), request_id :: String.t() | integer(), params :: map()) ::
               {:ok, map()} | {:error, String.t()}
 
-  @callback handle_call_tool(request_id :: String.t() | integer(), params :: map()) ::
+  @callback handle_call_tool(assigns :: Map.t(), request_id :: String.t() | integer(), params :: map()) ::
               {:ok, map()} | {:error, String.t()}
 
   @optional_callbacks [
-    handle_complete: 2,
-    handle_list_prompts: 2,
-    handle_get_prompt: 2,
-    handle_list_resources: 2,
-    handle_read_resource: 2,
-    handle_list_tools: 2,
-    handle_call_tool: 2
+    handle_complete: 3,
+    handle_list_prompts: 3,
+    handle_get_prompt: 3,
+    handle_list_resources: 3,
+    handle_read_resource: 3,
+    handle_list_tools: 3,
+    handle_call_tool: 3
   ]
 end
